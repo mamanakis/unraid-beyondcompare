@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>BeyondCompare</Name>
+  <Repository>your-dockerhub-username/beyond-compare:latest</Repository>
+  <Registry>https://hub.docker.com/r/your-dockerhub-username/beyond-compare/</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Project>https://www.scootersoftware.com/</Project>
+  <Overview>Beyond Compare 5 running in a KasmVNC web interface. Map /storage to your Unraid array to compare files.</Overview>
+  <Category>Tools:Utilities</Category>
+  <WebUI>http://[IP]:[PORT:3000]</WebUI>
+  <Icon>https://www.scootersoftware.com/images/media_BeyondCompareIcon512x512.png</Icon>
+  <ExtraParams>--shm-size=1g</ExtraParams>
+  
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>3000</HostPort>
+        <ContainerPort>3000</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/beyondcompare</HostDir>
+      <ContainerDir>/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/</HostDir>
+      <ContainerDir>/storage</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  
+  <Environment>
+    <Variable>
+      <Value>99</Value>
+      <Name>PUID</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>100</Value>
+      <Name>PGID</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+</Container>
