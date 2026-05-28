@@ -69,6 +69,6 @@ Because `/config` is mapped to your Unraid array, your registration will persist
 
 ## ⚖️ Legal & Disclaimer
 
-**Code & Templates (MIT License):** The `Dockerfile`, GitHub Actions workflow, and Unraid `XML` template provided in this repository are open-source and released under the [MIT License](LICENSE). You are free to use, modify, and distribute them.
+**Code & Templates (MIT License):** The `Dockerfile`, GitHub Actions workflow, and Unraid `XML` template provided in this repository are open-source and released under the [MIT License](LICENSE). 
 
-**Beyond Compare (Proprietary):** Beyond Compare is proprietary software owned by [Scooter Software](https://www.scootersoftware.com/). This repository is not affiliated with, endorsed by, or sponsored by Scooter Software. Users are solely responsible for ensuring their use of Beyond Compare complies with Scooter Software's End User License Agreement (EULA).
+**Beyond Compare (Proprietary):** This image distributes the stock, un-activated evaluation version of Beyond Compare 5 as provided by Scooter Software. In compliance with the Beyond Compare 5 EULA, **no license keys are included or distributed within this image**. Users are solely responsible for inputting their own valid license key via the WebUI for long-term use. This repository is independent and not officially affiliated with Scooter Software.
