@@ -7,25 +7,21 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-          - name: Check out the repo
-            uses: actions/checkout@v4
-    
-          - name: Log in to Docker Hub
-            uses: docker/login-action@v3
-            with:
-              username: ${{ secrets.DOCKERHUB_USERNAME }}
-              password: ${{ secrets.DOCKERHUB_TOKEN }}
-    
-          - name: Build and push
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              push: true
-              # CHANGE THIS LINE to your-username/your-repo:latest
-              tags: mamanakis/beyondcompare:latest
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true     
+          tags: mamanakis/beyondcompare:latest
