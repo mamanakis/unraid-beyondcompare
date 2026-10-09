@@ -3,12 +3,17 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - '**.md'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - '**.md'
   schedule:
-    # Runs at 02:00 every Sunday
-    - cron: '0 2 * * 0'
-  workflow_dispatch: # Enables the manual "Run workflow" button in the Actions tab
+    - cron: '21 3 * * 0'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,16 +22,58 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6
 
+      # 1. Check if the linuxserver/baseimage-kasmvnc base image has updated
+      - name: Check base image for updates
+        id: check_base
+        uses: lucacome/docker-image-update-checker@v3
+        with:
+          base-image: lscr.io/linuxserver/baseimage-kasmvnc:ubuntunoble
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
+
+      # 2. Check if Scooter Software published a new bcompare APT package
+      - name: Check Beyond Compare version
+        id: check_app
+        run: |
+          # Check the version currently installed in your published Docker Hub image
+          CURRENT=$(docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest dpkg-query -W -f='${Version}' bcompare 2>/dev/null || echo "none")
+          
+          # Query the Scooter Software APT repo for the latest available version
+          LATEST=$(docker run --rm ubuntu:noble bash -c "apt-get update -qq && apt-get install -y wget gnupg2 -qq > /dev/null && wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && apt-get update -qq && apt-cache policy bcompare | grep Candidate | awk '{print \$2}'")
+          
+          echo "Current image version: $CURRENT"
+          echo "Latest APT version: $LATEST"
+          
+          if [ "$CURRENT" != "$LATEST" ]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 3. Consolidate the checks to determine if a build is necessary
+      - name: Determine if build is required
+        id: should_build
+        run: |
+          if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ steps.check_base.outputs.needs-updating }}" == "true" ] || [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
+            echo "run_build=true" >> $GITHUB_OUTPUT
+            echo "Update required. Proceeding with build."
+          else
+            echo "run_build=false" >> $GITHUB_OUTPUT
+            echo "No upstream changes detected. Skipping build."
+          fi
+
+      # 4. Only execute Docker Hub login and build if run_build is true
       - name: Log in to Docker Hub
+        if: steps.should_build.outputs.run_build == 'true'
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
+        if: steps.should_build.outputs.run_build == 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          pull: true # Forces downloading the latest base image digest
-          tags: mamanakis/beyondcompare:latest
+          pull: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
