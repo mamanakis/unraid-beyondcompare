@@ -2,12 +2,12 @@
 
 This repository provides an automated build chain to create a modern, Unraid-compatible Docker container for **Beyond Compare 5**. 
 
-It wraps the official Beyond Compare Linux `.deb` package inside LinuxServer's highly optimized `baseimage-kasmvnc` (Ubuntu Noble), providing a fast, sharp, and feature-rich web GUI accessible directly from your browser.
+It wraps the official Beyond Compare Linux package inside LinuxServer's highly optimized `baseimage-kasmvnc` (Ubuntu Noble), providing a fast, sharp, and feature-rich web GUI accessible directly from your browser.
 
 ## Why build it this way?
-1. The repository hosts **no proprietary code**.
-2. GitHub Actions automatically downloads the stock evaluation `.deb` directly from Scooter Software's official servers during the build process.
-3. The automated pipeline builds the container and pushes it to your personal Docker Hub account.
+1. The repository hosts **no proprietary code or copyrighted image assets**.
+2. GitHub Actions dynamically configures the official Scooter Software APT repository during the build to ensure the absolute latest v5 release is always installed.
+3. The automated pipeline builds the container, fetches the official Beyond Compare logo for the WebUI, and pushes it to your personal Docker Hub account.
 4. You apply your own valid license key through the WebUI, which is saved safely to your local Unraid array.
 
 ---
@@ -25,15 +25,17 @@ To compile this image and push it to your own Docker Hub account, follow these s
 1. Fork or clone this repository to your own GitHub account.
 2. In your GitHub repository, go to **Settings > Secrets and variables > Actions**.
 3. Create the following two **New repository secrets**:
-   * `DOCKERHUB_USERNAME`: Your exact Docker Hub username.
-   * `DOCKERHUB_TOKEN`: The Access Token you copied from Docker Hub.
+  - `DOCKERHUB_USERNAME`: Your exact Docker Hub username.
+  - `DOCKERHUB_TOKEN`: The Access Token you copied from Docker Hub.
 
 ### 3. Trigger the Build
 1. Go to the **Actions** tab in your GitHub repository.
-2. Select the **Build and Push to Docker Hub** workflow on the left.
+2. Select the **Docker Image CI** workflow on the left.
 3. Click **Run workflow**. 
 
-GitHub will now spin up a virtual environment, pull the latest KasmVNC base image, download Beyond Compare 5, compile the Docker container, and push the finished `latest` tag to your Docker Hub account. This will happen automatically anytime you update the `Dockerfile`.
+GitHub will now spin up a virtual environment, pull the latest KasmVNC base image, fetch the newest Beyond Compare 5 package via APT, compile the Docker container, and push the finished `latest` tag to your Docker Hub account. 
+
+**Note:** This pipeline is also scheduled to run automatically every Sunday at 02:00 UTC. This ensures your container is always up to date with the latest OS security patches, KasmVNC updates, and Beyond Compare releases without requiring any manual intervention.
 
 ---
 
@@ -51,8 +53,8 @@ To make this container behave like a native Unraid application (with an icon, pr
 6. Click **Apply**.
 
 ### Volume Mappings
-* `/config`: Maps to your `appdata` share. This stores your Beyond Compare license key and session settings permanently.
-* `/storage`: Maps to your Unraid array (e.g., `/mnt/user/`). This grants the container access to the files you want to compare.
+- `/config`: Maps to your `appdata` share. This stores your Beyond Compare license key and session settings permanently.
+- `/storage`: Maps to your Unraid array (e.g., `/mnt/user/`). This grants the container access to the files you want to compare.
 
 ---
 
@@ -71,4 +73,4 @@ Because `/config` is mapped to your Unraid array, your registration will persist
 
 **Code & Templates (MIT License):** The `Dockerfile`, GitHub Actions workflow, and Unraid `XML` template provided in this repository are open-source and released under the [MIT License](LICENSE). 
 
-**Beyond Compare (Proprietary):** This image distributes the stock, un-activated evaluation version of Beyond Compare 5 as provided by Scooter Software. In compliance with the Beyond Compare 5 EULA, **no license keys are included or distributed within this image**. Users are solely responsible for inputting their own valid license key via the WebUI for long-term use. This repository is independent and not officially affiliated with Scooter Software.
+**Beyond Compare (Proprietary):** This image distributes the stock, un-activated evaluation version of Beyond Compare 5. During the build process, the official Beyond Compare icon is downloaded directly from Scooter Software's servers to brand the WebUI. In compliance with the Beyond Compare 5 EULA, **no license keys or copyrighted assets are included or distributed within this repository**. Users are solely responsible for inputting their own valid license key via the WebUI for long-term use. This repository is independent and not officially affiliated with Scooter Software.
