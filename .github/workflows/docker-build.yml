@@ -8,6 +8,7 @@ on:
   schedule:
     # Runs at 02:00 every Sunday
     - cron: '0 2 * * 0'
+  workflow_dispatch: # Enables the manual "Run workflow" button in the Actions tab
 
 jobs:
   build:
@@ -27,5 +28,5 @@ jobs:
         with:
           context: .
           push: true
-          pull: true # Forces downloading the latest kasmvnc base image
+          pull: true # Forces downloading the latest base image digest
           tags: mamanakis/beyondcompare:latest
