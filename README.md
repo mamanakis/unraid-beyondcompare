@@ -1,8 +1,25 @@
-# Unraid Beyond Compare 5 (KasmVNC)
+# Unraid Beyond Compare 5
 
-This repository provides an automated build chain to create a modern, Unraid-compatible Docker container for **Beyond Compare 5**. 
+This repository provides an automated build chain to create a modern, Unraid-compatible Docker container for **Beyond Compare 5**.
 
-It wraps the official Beyond Compare Linux package inside LinuxServer's highly optimized `baseimage-kasmvnc` (Ubuntu Noble), providing a fast, sharp, and feature-rich web GUI accessible directly from your browser.
+The deployment offers two distinct base image variants to suit your Unraid server's hardware and performance requirements.
+
+**KasmVNC Build (High Performance)**
+
+* Wraps the official Beyond Compare package inside the `linuxserver/baseimage-kasmvnc` Ubuntu Noble image.
+* Delivers a high-framerate streaming experience with bidirectional clipboard synchronization and dynamic window resizing.
+* Requires approximately 1.5 GB of extracted disk space.
+
+**noVNC Build (Lightweight)**
+
+* Wraps the application inside the efficient `jlesage/baseimage-gui:ubuntu-24.04-v4` image.
+* Utilizes a minimal Xvfb display server to strictly conserve Unraid cache drive space and system RAM.
+* Requires approximately 300 MB of extracted disk space.
+
+**Supported Docker Tags**
+
+* `latest` or `kasmvnc`: Pulls the feature-rich KasmVNC performance version.
+* `novnc`: Pulls the resource-optimized jlesage minimal version.
 
 [📖 View Build History & Changelog](CHANGELOG.md)
 
