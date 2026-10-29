@@ -1,16 +1,4 @@
-name: Docker Image CI
-
-on:
-  push:
-    branches: [ "novnc-test" ]
-    paths-ignore:
-      - 'README.md'
-      - '**.md'
-  pull_request:
-    branches: [ "main" ]
-    paths-ignore:
-      - 'README.md'
-      - '**.md'
+d'
   schedule:
     - cron: '21 3 * * 0'
   workflow_dispatch:
