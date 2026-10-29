@@ -43,7 +43,7 @@ jobs:
           CURRENT=$(docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc dpkg-query -W -f='${Version}' bcompare 2>/dev/null || echo "none")
           
           # Query the Scooter Software APT repo for the latest available version
-          LATEST=$(docker run --rm ubuntu:noble bash -c "apt-get update -qq && apt-get install -y wget gnupg2 -qq > /dev/null && wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && apt-get update -qq && apt-cache policy bcompare | grep Candidate | awk '{print \$2}'")
+          LATEST=$(docker run --rm ubuntu:latest bash -c "apt-get update -qq && apt-get install -y wget gnupg2 -qq > /dev/null && wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && apt-get update -qq && apt-cache policy bcompare | grep Candidate | awk '{print \$2}'")
           
           echo "Current image version: $CURRENT"
           echo "Latest APT version: $LATEST"
