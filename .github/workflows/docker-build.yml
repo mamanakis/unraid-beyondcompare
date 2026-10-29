@@ -1,4 +1,16 @@
-d'
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
   schedule:
     - cron: '21 3 * * 0'
   workflow_dispatch:
@@ -13,108 +25,114 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6
 
-      # 1. Check if the jlesage base image has updated
-      - name: Check base image for updates
-        id: check_base
+      - name: Check KasmVNC base image
+        id: check_base_kasmvnc
+        uses: lucacome/docker-image-update-checker@v3
+        with:
+          base-image: lscr.io/linuxserver/baseimage-kasmvnc:ubuntunoble
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
+
+      - name: Check noVNC base image
+        id: check_base_novnc
         uses: lucacome/docker-image-update-checker@v3
         with:
           base-image: jlesage/baseimage-gui:ubuntu-24.04-v4
           image: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc
 
-      # 2. Check if Scooter Software published a new bcompare APT package
       - name: Check Beyond Compare version
         id: check_app
         run: |
           set -e
-          
-          # Check the version currently installed in your published Docker Hub image
-          CURRENT=$(docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc dpkg-query -W -f='${Version}' bcompare 2>/dev/null || echo "none")
-          
-          # Query the Scooter Software APT repo for the latest available version
+          CURRENT=$(docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest dpkg-query -W -f='${Version}' bcompare 2>/dev/null || echo "none")
           LATEST=$(docker run --rm -e DEBIAN_FRONTEND=noninteractive ubuntu:latest bash -c "apt-get update -qq && apt-get install -y wget gnupg2 -qq > /dev/null && wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && apt-get update -qq && apt-cache policy bcompare | grep Candidate | awk '{print \$2}'")
-          
-          echo "Current image version: $CURRENT"
-          echo "Latest APT version: $LATEST"
           
           if [ "$CURRENT" != "$LATEST" ]; then
             echo "needs_update=true" >> $GITHUB_OUTPUT
-            echo "change_note=Beyond Compare V $LATEST" >> $GITHUB_OUTPUT
+            echo "version=$LATEST" >> $GITHUB_OUTPUT
           else
             echo "needs_update=false" >> $GITHUB_OUTPUT
           fi
 
-      # 3. Consolidate the checks to determine if a build is necessary
-      - name: Determine if build is required
-        id: should_build
+      - name: Evaluate Build Requirements
+        id: eval
         run: |
-          set -e
+          BUILD_KASMVNC="false"
+          BUILD_NOVNC="false"
+          REASON=""
           
-          CHANGE_REASON="Manual trigger or source code update"
-          
-          if [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
-            CHANGE_REASON="${{ steps.check_app.outputs.change_note }}"
-          elif [ "${{ steps.check_base.outputs.needs-updating }}" == "true" ]; then
-            CHANGE_REASON="Base image (jlesage/baseimage-gui) updated"
-          fi
-          echo "change_reason=$CHANGE_REASON" >> $GITHUB_OUTPUT
-
-          if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ steps.check_base.outputs.needs-updating }}" == "true" ] || [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
-            echo "run_build=true" >> $GITHUB_OUTPUT
-            echo "Update required. Proceeding with build."
+          if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            BUILD_KASMVNC="true"
+            BUILD_NOVNC="true"
+            REASON="Manual trigger or source code update"
+          elif [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
+            BUILD_KASMVNC="true"
+            BUILD_NOVNC="true"
+            REASON="Beyond Compare V ${{ steps.check_app.outputs.version }}"
           else
-            echo "run_build=false" >> $GITHUB_OUTPUT
-            echo "No upstream changes detected. Skipping build."
+            if [ "${{ steps.check_base_kasmvnc.outputs.needs-updating }}" == "true" ]; then
+              BUILD_KASMVNC="true"
+              REASON="Base image (KasmVNC) updated. "
+            fi
+            if [ "${{ steps.check_base_novnc.outputs.needs-updating }}" == "true" ]; then
+              BUILD_NOVNC="true"
+              REASON="${REASON}Base image (noVNC) updated."
+            fi
           fi
+          
+          echo "build_kasmvnc=$BUILD_KASMVNC" >> $GITHUB_OUTPUT
+          echo "build_novnc=$BUILD_NOVNC" >> $GITHUB_OUTPUT
+          echo "reason=$REASON" >> $GITHUB_OUTPUT
 
-      # 4. Only execute Docker Hub login and build if run_build is true
       - name: Log in to Docker Hub
-        if: steps.should_build.outputs.run_build == 'true'
+        if: steps.eval.outputs.build_kasmvnc == 'true' || steps.eval.outputs.build_novnc == 'true'
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        if: steps.should_build.outputs.run_build == 'true'
+      - name: Build and push KasmVNC
+        if: steps.eval.outputs.build_kasmvnc == 'true'
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: ./kasmvnc
           push: true
           pull: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:kasmvnc
 
-      # 5. Prepend to changelog, prune to 500 lines, and commit (Robust POSIX Method)
+      - name: Build and push noVNC
+        if: steps.eval.outputs.build_novnc == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: ./novnc
+          push: true
+          pull: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc
+
       - name: Update Changelog
-        if: steps.should_build.outputs.run_build == 'true'
+        if: steps.eval.outputs.build_kasmvnc == 'true' || steps.eval.outputs.build_novnc == 'true'
         run: |
-          set -e # Stop pipeline immediately if any command fails
-          
+          set -e
           DATE=$(date +'%Y-%m-%d')
           
-          # Initialize the file with the header if it does not exist
           if [ ! -f CHANGELOG.md ]; then
             echo "# Changelog" > CHANGELOG.md
             echo "" >> CHANGELOG.md
           fi
           
-          # Write the new entry to a temporary file
           {
             echo "-------------"
             echo "$DATE"
-            echo "${{ steps.should_build.outputs.change_reason }}"
+            echo "${{ steps.eval.outputs.reason }}"
             echo ""
           } > new_entry.txt
           
-          # 1. Extract the first line (# Changelog)
           head -n 1 CHANGELOG.md > temp_changelog.md
-          
-          # 2. Append the new entry below the title
           cat new_entry.txt >> temp_changelog.md
-          
-          # 3. Append the rest of the original file (starting from line 2)
           tail -n +2 CHANGELOG.md >> temp_changelog.md
           
-          # 4. Prune to 500 lines and overwrite the original
           head -n 500 temp_changelog.md > CHANGELOG.md
           rm temp_changelog.md new_entry.txt
           
