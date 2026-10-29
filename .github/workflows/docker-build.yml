@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "novnc-test" ]
     paths-ignore:
       - 'README.md'
       - '**.md'
@@ -94,7 +94,7 @@ jobs:
           context: .
           push: true
           pull: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:novnc
 
       # 5. Prepend to changelog, prune to 500 lines, and commit (Robust POSIX Method)
       - name: Update Changelog
