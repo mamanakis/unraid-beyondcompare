@@ -4,6 +4,8 @@ This repository provides an automated build chain to create a modern, Unraid-com
 
 It wraps the official Beyond Compare Linux package inside LinuxServer's highly optimized `baseimage-kasmvnc` (Ubuntu Noble), providing a fast, sharp, and feature-rich web GUI accessible directly from your browser.
 
+[📖 View Build History & Changelog](CHANGELOG.md)
+
 ## Why build it this way?
 1. The repository hosts **no proprietary code or copyrighted image assets**.
 2. GitHub Actions dynamically configures the official Scooter Software APT repository during the build to ensure the absolute latest v5 release is always installed.
