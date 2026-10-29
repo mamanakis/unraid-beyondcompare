@@ -7,7 +7,9 @@ RUN apt-get update && \
     wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && \
     wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && \
     apt-get update && \
+    mv /var/log /var/log.bak && mkdir /var/log && \
     apt-get install --no-install-recommends -y bcompare && \
+    rm -rf /var/log && mv /var/log.bak /var/log && \
     APP_ICON_URL="https://www.scootersoftware.com/images/media_BeyondCompareIcon512x512.png" && \
     install_app_icon.sh "$APP_ICON_URL" && \
     apt-get clean && \
