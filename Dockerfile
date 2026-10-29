@@ -1,5 +1,4 @@
-FROM lscr.io/linuxserver/baseimage-kasmvnc:ubuntunoble
-
+FROM jlesage/baseimage-gui:ubuntu-22.04-v4
 ENV TITLE="Beyond Compare"
 
 RUN apt-get update && \
