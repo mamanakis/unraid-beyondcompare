@@ -3,7 +3,7 @@ FROM jlesage/baseimage-gui:ubuntu-24.04-v4
 ENV APP_NAME="Beyond Compare 5"
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget gnupg2 gvfs-backends ca-certificates && \
+    apt-get install -y --no-install-recommends wget gnupg2 ca-certificates && \
     wget -qO /etc/apt/trusted.gpg.d/scootersoftware.asc https://www.scootersoftware.com/DEB-GPG-KEY-scootersoftware.asc && \
     wget -qO /etc/apt/sources.list.d/scootersoftware.list https://www.scootersoftware.com/scootersoftware.list && \
     apt-get update && \
