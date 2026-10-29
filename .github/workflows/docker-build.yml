@@ -15,6 +15,10 @@ on:
     - cron: '21 3 * * 0'
   workflow_dispatch:
 
+# REQUIRED: Grant GitHub Actions permission to push commits back to the repository
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,6 +38,8 @@ jobs:
       - name: Check Beyond Compare version
         id: check_app
         run: |
+          set -e
+          
           # Check the version currently installed in your published Docker Hub image
           CURRENT=$(docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest dpkg-query -W -f='${Version}' bcompare 2>/dev/null || echo "none")
           
@@ -45,6 +51,7 @@ jobs:
           
           if [ "$CURRENT" != "$LATEST" ]; then
             echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "change_note=Beyond Compare V $LATEST" >> $GITHUB_OUTPUT
           else
             echo "needs_update=false" >> $GITHUB_OUTPUT
           fi
@@ -53,6 +60,17 @@ jobs:
       - name: Determine if build is required
         id: should_build
         run: |
+          set -e
+          
+          CHANGE_REASON="Manual trigger or source code update"
+          
+          if [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
+            CHANGE_REASON="${{ steps.check_app.outputs.change_note }}"
+          elif [ "${{ steps.check_base.outputs.needs-updating }}" == "true" ]; then
+            CHANGE_REASON="Base image (linuxserver/baseimage-kasmvnc) updated"
+          fi
+          echo "change_reason=$CHANGE_REASON" >> $GITHUB_OUTPUT
+
           if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ steps.check_base.outputs.needs-updating }}" == "true" ] || [ "${{ steps.check_app.outputs.needs_update }}" == "true" ]; then
             echo "run_build=true" >> $GITHUB_OUTPUT
             echo "Update required. Proceeding with build."
@@ -77,3 +95,45 @@ jobs:
           push: true
           pull: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/beyondcompare:latest
+
+      # 5. Prepend to changelog, prune to 500 lines, and commit (Robust POSIX Method)
+      - name: Update Changelog
+        if: steps.should_build.outputs.run_build == 'true'
+        run: |
+          set -e # Stop pipeline immediately if any command fails
+          
+          DATE=$(date +'%Y-%m-%d')
+          
+          # Initialize the file with the header if it does not exist
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Write the new entry to a temporary file
+          {
+            echo "-------------"
+            echo "$DATE"
+            echo "${{ steps.should_build.outputs.change_reason }}"
+            echo ""
+          } > new_entry.txt
+          
+          # 1. Extract the first line (# Changelog)
+          head -n 1 CHANGELOG.md > temp_changelog.md
+          
+          # 2. Append the new entry below the title
+          cat new_entry.txt >> temp_changelog.md
+          
+          # 3. Append the rest of the original file (starting from line 2)
+          tail -n +2 CHANGELOG.md >> temp_changelog.md
+          
+          # 4. Prune to 500 lines and overwrite the original
+          head -n 500 temp_changelog.md > CHANGELOG.md
+          rm temp_changelog.md new_entry.txt
+          
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add CHANGELOG.md
+          
+          git commit -m "docs: prepend build log for $DATE [skip ci]" || echo "No changes to commit"
+          git push
