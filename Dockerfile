@@ -10,10 +10,10 @@ RUN apt-get update && \
     mv /var/log /var/log.bak && mkdir /var/log && \
     apt-get install --no-install-recommends -y bcompare && \
     rm -rf /var/log && mv /var/log.bak /var/log && \
-    APP_ICON_URL="https://www.scootersoftware.com/images/media_BeyondCompareIcon512x512.png" && \
-    install_app_icon.sh "$APP_ICON_URL" && \
+    wget -U "Mozilla/5.0" -qO /tmp/icon.png "https://www.scootersoftware.com/images/media_BeyondCompareIcon512x512.png" && \
+    install_app_icon.sh /tmp/icon.png && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/icon.png
 
 RUN echo "#!/bin/sh" > /startapp.sh && \
     echo "exec /usr/bin/bcompare" >> /startapp.sh && \
