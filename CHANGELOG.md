@@ -1,5 +1,9 @@
 # Changelog
 -------------
+2026-11-15
+Beyond Compare V 5.2.8-33052
+
+-------------
 2026-11-08
 Beyond Compare V 5.2.7-32913
 
